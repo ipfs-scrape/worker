@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ipfs-scrape/worker/backend"
@@ -50,12 +49,7 @@ func main() {
 	logrus.Infof("IPFS_SCRAPE_CONCURRENCY: %d\n", ipfsScrapeConcurrency)
 
 	// Create a new session and DynamoDB client
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region:   aws.String("us-east-1"),
-			Endpoint: aws.String("http://localhost:8000"),
-		},
-	})
+	sess, err := session.NewSession()
 
 	if err != nil {
 		logrus.Fatal(err)
