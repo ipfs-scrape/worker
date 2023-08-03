@@ -98,9 +98,10 @@ func (p *IPFSProcessor) Run() {
 func (p *IPFSProcessor) Work(item queue.QueueItem) error {
 	failures := []string{}
 	// We assume the Data Payload for this type of work is the json array of CIDs
-	if cidsIntf, ok := item.Data["cids"]; ok {
-		cids := cidsIntf.([]string)
-		for _, cid := range cids {
+	if anyAny, ok := item.Data["cids"]; ok {
+		cidsAnySlice := anyAny.([]any)
+		for _, cidAny := range cidsAnySlice {
+			cid := cidAny.(string)
 			metadata, err := p.FetchCID(cid)
 			if err != nil {
 				p.logger.WithError(err).WithField("CID", cid).Error("Failed to fetch CID metadata")

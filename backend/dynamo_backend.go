@@ -44,7 +44,7 @@ func (b *DynamoDBBackend) Read(id string) (any, error) {
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(b.tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"id": {
+			"ID": {
 				S: aws.String(id),
 			},
 		},
@@ -87,7 +87,7 @@ func (b *DynamoDBBackend) Delete(id string) error {
 	input := &dynamodb.DeleteItemInput{
 		TableName: aws.String(b.tableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"id": {
+			"ID": {
 				S: aws.String(id),
 			},
 		},
