@@ -65,7 +65,7 @@ func (q *DynamoDBQueue) AddItem(queueItem QueueItem) error {
 		return err
 	}
 
-	q.logger.WithField("ID", id).Info("Item added to queue")
+	q.logger.WithField("ID", id).Infof("Item added to queue: %s", q.QueueName)
 	return nil
 }
 
@@ -74,7 +74,7 @@ func (q *DynamoDBQueue) GetNextItem() (QueueItem, error) {
 
 	expr, err := expression.NewBuilder().
 		WithFilter(expression.And(
-			IsUnlockedCondition,
+			IsUnlockedCondition(),
 			expression.BeginsWith(expression.Name("ID"), fmt.Sprintf("queue-%s-", q.QueueName)),
 		)).
 		Build()
@@ -90,7 +90,6 @@ func (q *DynamoDBQueue) GetNextItem() (QueueItem, error) {
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		FilterExpression:          expr.Filter(),
-		Limit:                     aws.Int64(1),
 	}
 
 	// Execute the Scan operation
@@ -99,19 +98,19 @@ func (q *DynamoDBQueue) GetNextItem() (QueueItem, error) {
 		q.logger.WithError(err).Error("Failed to scan DynamoDB table")
 		return QueueItem{}, err
 	}
-
 	// Check if any items were returned by the Scan operation
 	if len(result.Items) == 0 {
-		q.logger.Info("No items available in queue")
+		q.logger.Infof("No items available in table: %s for queue: %s", q.TableName, q.QueueName)
 		return QueueItem{}, fmt.Errorf("no items available in queue")
 	}
+	q.logger.Infof("Found an item in the queue, unmarshalling.")
 
 	// Unmarshal and Lock
 	item := NewDDBQueueItemWithOptions(result.Items[0], q)
 	err = item.Lock()
 	if err != nil {
-		q.logger.WithError(err).Warn("Something may have beat us to the lock. Move on!")
-		return QueueItem{}, fmt.Errorf("Something may have beat us to the lock. Move on!")
+		q.logger.WithError(err).Warn("something may have beat us to the lock. Move on!")
+		return QueueItem{}, fmt.Errorf("something may have beat us to the lock. Move on!")
 	}
 
 	return item.Data, nil
@@ -121,8 +120,9 @@ func (q *DynamoDBQueue) GetNextItem() (QueueItem, error) {
 func (q *DynamoDBQueue) Done(item QueueItem) error {
 	// Create a new expression to delete the item from DynamoDB
 	deleteExpr, err := expression.NewBuilder().
-		WithCondition(expression.
-			Equal(expression.Key("Data.id"), expression.Value(item.ID))).Build()
+		WithFilter(expression.And(
+			expression.Equal(expression.Name("Data.id"), expression.Value(item.ID)),
+			expression.BeginsWith(expression.Name("ID"), fmt.Sprintf("queue-%s-", q.QueueName)))).Build()
 	if err != nil {
 		q.logger.WithError(err).Error("Failed to build delete condition expression")
 		return err
@@ -134,7 +134,6 @@ func (q *DynamoDBQueue) Done(item QueueItem) error {
 		ExpressionAttributeNames:  deleteExpr.Names(),
 		ExpressionAttributeValues: deleteExpr.Values(),
 		FilterExpression:          deleteExpr.Filter(),
-		Limit:                     aws.Int64(1),
 	}
 
 	// Execute the Scan operation
@@ -146,24 +145,23 @@ func (q *DynamoDBQueue) Done(item QueueItem) error {
 
 	// Check if any items were returned by the Scan operation
 	if len(result.Items) == 0 {
-		q.logger.Info("No items available in table")
+		q.logger.Info("No items available in table to remove")
 		return nil
 	}
+
+	q.logger.WithField("ID", result.Items[0]["ID"]).Info("Item found in DynamoDB")
 
 	// Delete the item from DynamoDB
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"ID": result.Items[0]["ID"],
 		},
-		TableName:                 aws.String(q.TableName),
-		ConditionExpression:       deleteExpr.Condition(),
-		ExpressionAttributeNames:  deleteExpr.Names(),
-		ExpressionAttributeValues: deleteExpr.Values(),
+		TableName: aws.String(q.TableName),
 	}
 
 	_, err = q.svc.DeleteItem(input)
 	if err != nil {
-		q.logger.WithError(err).Error("Failed to delete item from DynamoDB")
+		q.logger.WithError(err).WithField("item", result.Items[0]).Error("Failed to delete item from DynamoDB")
 		return err
 	}
 

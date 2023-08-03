@@ -50,7 +50,6 @@ func main() {
 
 	// Create a new session and DynamoDB client
 	sess, err := session.NewSession()
-
 	if err != nil {
 		logrus.Fatal(err)
 	}

@@ -80,7 +80,7 @@ func (item *DDBQueueItem) AV() map[string]*dynamodb.AttributeValue {
 func (item *DDBQueueItem) Lock() error {
 	// Use a DynamoDB expression to lock the item in the queue
 	updateExpr, err := expression.NewBuilder().
-		WithCondition(IsUnlockedCondition).
+		WithCondition(IsUnlockedCondition()).
 		WithUpdate(
 			expression.Set(expression.Name("Locked"), expression.Value(true)).Set(expression.Name("LockTime"), expression.Value(time.Now().UnixNano())),
 		).

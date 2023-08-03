@@ -168,6 +168,7 @@ func (p *IPFSProcessor) FetchCID(cid string) (ipfs.Metadata, error) {
 		return ipfs.Metadata{}, err
 	}
 
-	metadata.ID = cid
+	metadata.ID = ipfs.GenerateIDFromCID(cid)
+	metadata.CID = cid
 	return metadata, nil
 }

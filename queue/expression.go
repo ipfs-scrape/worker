@@ -7,13 +7,15 @@ import (
 )
 
 // IsUnlockedCondition is a global property that represents the condition for getting the next unlocked queue item.
-var IsUnlockedCondition = expression.Or(
-	expression.Equal(expression.Name("Locked"), expression.Value(false)),
-	expression.And(
-		expression.Equal(expression.Name("Locked"), expression.Value(true)),
-		expression.Or(
-			expression.Not(expression.GreaterThan(expression.Name("LockTime"), expression.Value(time.Now().Add(-time.Second).UnixNano()))),
-			expression.AttributeNotExists(expression.Name("LockTime")),
+func IsUnlockedCondition() expression.ConditionBuilder {
+	return expression.Or(
+		expression.Equal(expression.Name("Locked"), expression.Value(false)),
+		expression.And(
+			expression.Equal(expression.Name("Locked"), expression.Value(true)),
+			expression.Or(
+				expression.LessThan(expression.Name("LockTime"), expression.Value(time.Now().Add(-time.Hour).UnixNano())),
+				expression.AttributeNotExists(expression.Name("LockTime")),
+			),
 		),
-	),
-)
+	)
+}
