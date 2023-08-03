@@ -27,7 +27,7 @@ func main() {
 	ipfsScrapeIntervalStr := os.Getenv("IPFS_SCRAPE_INTERVAL")
 	ipfsScrapeInterval, err := time.ParseDuration(ipfsScrapeIntervalStr)
 	if err != nil {
-		logrus.Warnf("Failed to parse IPFS_SCRAPE_INTERVAL: %s\n %v\n", ipfsScrapeIntervalStr, err)
+		logrus.Warnf("Failed to parse IPFS_SCRAPE_INTERVAL: %s %v", ipfsScrapeIntervalStr, err)
 		ipfsScrapeInterval = 5 * time.Second
 	}
 
@@ -37,16 +37,16 @@ func main() {
 		var err error
 		ipfsScrapeConcurrency, err = strconv.Atoi(ipfsScrapeConcurrencyStr)
 		if err != nil {
-			logrus.Warnf("Failed to convert IPFS_SCRAPE_CONCURRENCY: %s\n to int: %v", ipfsScrapeConcurrencyStr, err)
+			logrus.Warnf("Failed to convert IPFS_SCRAPE_CONCURRENCY: %s to int: %v", ipfsScrapeConcurrencyStr, err)
 			ipfsScrapeConcurrency = 5
 		}
 	}
 
 	// Use the IPFS_DYNAMODB_NAME environment variable
-	logrus.Infof("IPFS_DYNAMODB_NAME: %s\n", dynamodbName)
-	logrus.Infof("IPFS_GATEWAY_URL: %s\n", ipfsGatewayURL)
-	logrus.Infof("IPFS_SCRAPE_INTERVAL: %s\n", ipfsScrapeInterval)
-	logrus.Infof("IPFS_SCRAPE_CONCURRENCY: %d\n", ipfsScrapeConcurrency)
+	logrus.Infof("IPFS_DYNAMODB_NAME: %s", dynamodbName)
+	logrus.Infof("IPFS_GATEWAY_URL: %s", ipfsGatewayURL)
+	logrus.Infof("IPFS_SCRAPE_INTERVAL: %s", ipfsScrapeInterval)
+	logrus.Infof("IPFS_SCRAPE_CONCURRENCY: %d", ipfsScrapeConcurrency)
 
 	// Create a new session and DynamoDB client
 	sess, err := session.NewSession()
